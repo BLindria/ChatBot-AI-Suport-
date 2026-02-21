@@ -1,0 +1,179 @@
+{
+  "name": "Especialista_SLA",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "sessionId"
+            },
+            {
+              "name": "query"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -384,
+        -48
+      ],
+      "id": "a46811d3-dfe3-47eb-98fe-9c6295166a2a",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "contextWindowLength": 11
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -128,
+        160
+      ],
+      "id": "65016901-2d60-4fb0-8c44-b465f5e1b497",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.query }}",
+        "options": {
+          "systemMessage": "=## Perfil\nVocê é o Especialista SLA Winthor. Sua função é garantir que o suporte colete todas as evidências necessárias antes de escalar um problema para o produto.\n\n## Seu Processo de Raciocínio\n1. O usuário fornecerá um número de rotina ou nome de processo (ex: \"SLA 1752\" ou \"SLA 1731\").\n2. A ferramenta de Google Sheets já retornará a linha exata da rotina solicitada. Seu trabalho é apenas formatar os dados recebidos seguindo as seções abaixo.\n3. Com os dados em mãos, você DEVE formatar a resposta seguindo rigorosamente estas seções:\n\n### 🔍 Diagnóstico para a Rotina [Número da Rotina]\n* **O que coletar (Rastro SQL/Ouro):** [Extrair da coluna Rastro SQL]\n* **O que validar (Red Flags):** [Extrair da coluna Red Flags]\n* **Passo a Passo da Evidência:** [Extrair da coluna Passo a Passo Vídeo]\n* **Configurações Críticas:** [Extrair da coluna Parâmetros Críticos]\n\n## Regras de Ouro\n- Se o usuário disser apenas \"1752\", entenda que ele quer o SLA daquela rotina.\n- Se a rotina NÃO estiver na planilha, responda: \"A rotina [X] não consta na minha base de SLAs. Por favor, verifique se o número está correto ou consulte o manual geral.\"\n- Seja direto e técnico. Não use introduções longas. Use Bullet Points para facilitar a leitura no chat."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -176,
+        -48
+      ],
+      "id": "02a90cc2-7604-4aa9-b863-d74ff18433c0",
+      "name": "Especialista_SLA"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -320,
+        160
+      ],
+      "id": "27cc8754-2606-40ca-affc-e951bd798f33",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "nV5h7PDNuQ1uqKYN",
+          "name": "Google Gemini(PaLM) Api account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Busca os requisitos de SLA de uma rotina específica do Winthor no Google Sheets. Obrigatório passar o número da rotina (ex: 1752) como parâmetro de busca para filtrar a coluna 'Rotina'.",
+        "documentId": {
+          "__rl": true,
+          "value": "1R9cLvsnW0oRcwO3PL0Gv25wjCmwnPzEtOm_SPmm0VNI",
+          "mode": "list",
+          "cachedResultName": "SLA Rotinas Winthor WMS - V1.0",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1R9cLvsnW0oRcwO3PL0Gv25wjCmwnPzEtOm_SPmm0VNI/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Página1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1R9cLvsnW0oRcwO3PL0Gv25wjCmwnPzEtOm_SPmm0VNI/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Rotina",
+              "lookupValue": "={{ $json.query }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        48,
+        144
+      ],
+      "id": "6a6d29b7-73a0-4e40-bede-d33343dce0fc",
+      "name": "Get row(s) in sheet in Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "4dMjYygrt47AdjFT",
+          "name": "Google Sheets account 3"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Especialista_SLA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Especialista_SLA",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Especialista_SLA",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet in Google Sheets": {
+      "ai_tool": [
+        [
+          {
+            "node": "Especialista_SLA",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "a6a74d31-08c9-42c5-acd6-2b570c9fb412",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a100eda132b46d17c122c35c57d9c4da66c50feb3dc8eeaffb9590c8c4d2328c"
+  },
+  "id": "mC8wovKbaL00XeuGQjiR5",
+  "tags": []
+}
