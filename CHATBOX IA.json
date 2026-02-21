@@ -1,0 +1,455 @@
+{
+  "name": "CHATBOX IA",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "Analise_issue_Jira",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -2208,
+        -240
+      ],
+      "id": "1241576e-197c-4a1e-a406-c05f4eef56bd",
+      "name": "Webhook",
+      "webhookId": "40d16412-0163-4e8d-9e43-75e8fe109b5c"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"resposta\": $node[\"AI Agent\"].json[\"output\"] || \"Erro: IA não gerou resposta\" } }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "POST, GET, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -1184,
+        -240
+      ],
+      "id": "7868b618-ccf3-41ff-884b-ca149ece8964",
+      "name": "Resposta para o Suporte"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1u9EdOGG1lK5H3JWzY9B7okMfxtWfbIPf5A_1GO8itj8",
+          "mode": "list",
+          "cachedResultName": "Teste IA n8n",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1u9EdOGG1lK5H3JWzY9B7okMfxtWfbIPf5A_1GO8itj8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1u9EdOGG1lK5H3JWzY9B7okMfxtWfbIPf5A_1GO8itj8/edit?gid=0#gid=0",
+          "mode": "url"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Data": "=Data: {{ $now.setZone('America/Sao_Paulo').format('DD/MM/YYYY HH:mm') }}",
+            "Rotina": "={{ $node[\"Webhook\"].json[\"body\"][\"instrucao\"] }}",
+            "Resposta_IA": "={{ $json.output[0].content[0].text.split('.')[0] + '.' }}",
+            "Satisfação": "={{ $json.body.feedback }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Data",
+              "displayName": "Data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Rotina",
+              "displayName": "Rotina",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Resposta_IA",
+              "displayName": "Resposta_IA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Satisfação",
+              "displayName": "Satisfação",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -1376,
+        -240
+      ],
+      "id": "473d4886-b881-4f17-a9b0-5eae7838e253",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "4dMjYygrt47AdjFT",
+          "name": "Google Sheets account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.body.instrucao }}",
+        "options": {
+          "systemMessage": "=Agente Principal - Orquestrador:\n\n# Identidade\nVocê é o Maestro do Produto WMS WINTHOR, que possui todo conhecimento acessível para apoiar o que será solicitado pelos usuários.\n\nSua função é EXCLUSIVAMENTE:\n1. Acionar a ferramenta (especialista(Tools)) correspondente.\n2. Atuar como um espelho: A ferramenta vai gerar uma resposta. O seu trabalho é pegar essa resposta e entregá-la ao usuário exatamente como ela veio, sem tirar nem por.\n\n# Seus Especialistas (Tools)\n\n1. Especialista_SLA\n\nAo acionar o Especialista_SLA, envie APENAS os números da rotina identificada. Exemplo: se o usuário disser 'SLA 1771', envie apenas '1771'.\n\nQuando usar: Solicitações de requisitos de abertura de issue, checklists de evidências ou quando o usuário citar números de rotinas (ex: \"1752\", \"SLA da 1704\").\n\nInstrução de Execução: Identifique o número da rotina no texto do usuário. Acione a ferramenta passando apenas o número da rotina como parâmetro.\n\nObjetivo: Retornar o checklist completo de evidências (Rastro SQL, Red Flags, Passo a Passo) para o suporte.\n\n----\n\n2. Especialista_DUVIDAS\n\nUtilize quando a solicitação envolver questionamentos quanto as rotinas o processos:\n“Como fazer?”, “Como usar?”, “Como funciona?”, \"Qual processo?\".. fluxos, regras de negócio.\nA IA irá utilizar a entrada do usuário e questionar no \"https://google.com/ai\" seguido de \"na WINTHOR WMS?\"\nA resposta deve ser baseada no resultado da \"Visão geral criada por IA\"\n\nSempre finalizar a sua busca com:\n“no WINTHOR WMS”\n\nExemplo interno de como deve ser sua busca:\n“Como usar a rotina 1757 no WINTHOR WMS”\n\nApresente exatamente o que a busca da \"Visão geral criada por IA\"\n\n\n----\n\n3. Especialista_SQL\n\nUtilize quando a solicitação envolver:\nCriação de scripts SQL.\nCriação de triggers, consultas em banco de dados, join, cancatenas tables, etc."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -1776,
+        -240
+      ],
+      "id": "715ee124-ecc3-4557-bace-e136018e9d59",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.body.instrucao }}",
+        "contextWindowLength": 33
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -2000,
+        64
+      ],
+      "id": "ec2b9035-a964-4143-b97e-826426b7a537",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -2160,
+        64
+      ],
+      "id": "9ba8b0c2-6349-40ca-860a-8bccc4d5bdce",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "nV5h7PDNuQ1uqKYN",
+          "name": "Google Gemini(PaLM) Api account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "description": "Você é o Especialista_SLA do WMS Winthor.\n\nSua função é consultar  o número da rotina e apresentar  as informações dessa rotina para o usuário ter isso como um checklist.\nEX; SLA 1771.",
+        "workflowId": {
+          "__rl": true,
+          "value": "mC8wovKbaL00XeuGQjiR5",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/mC8wovKbaL00XeuGQjiR5",
+          "cachedResultName": "Especialista_SLA"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "sessionId": "={{ $json.body.instrucao }}",
+            "query": "={{ $json.body.sessionId }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "sessionId",
+              "displayName": "sessionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "query",
+              "displayName": "query",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        -1440,
+        64
+      ],
+      "id": "bfb4ca98-3b7a-4cb1-9c66-00be63c499bd",
+      "name": "Call 'Especialista_SLA'"
+    },
+    {
+      "parameters": {
+        "description": "Você é a 'Visão geral criada por IA' do Google integrada ao Winthor.\n\nSua tarefa:\n\nPegue a entrada do usuário e use a ferramenta de busca para pesquisar exatamente: '[Pergunta do usuário] no WINTHOR WMS'.\n\nVocê DEVE obrigatoriamente finalizar a sua busca interna com a frase: 'no WINTHOR WMS'.\n\nAnalise os resultados da pesquisa e localize a seção correspondente à 'Visão geral'.\n\nResposta Final: Apresente EXATAMENTE o que a busca retornaria na 'Visão geral criada por IA'. Não adicione opiniões, não mude o texto e não use saudações. Seja o espelho do resultado do Google.\"",
+        "workflowId": {
+          "__rl": true,
+          "value": "pnQtMRF3eyD7qxxmCDN2l",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/pnQtMRF3eyD7qxxmCDN2l",
+          "cachedResultName": "Especialista_DUVIDAS"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "sessionId": "={{ $json.body.sessionId }}",
+            "query": "={{ $json.body.instrucao }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "sessionId",
+              "displayName": "sessionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "query",
+              "displayName": "query",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        -1616,
+        64
+      ],
+      "id": "223330b5-aaae-48eb-8a99-70d8a7686946",
+      "name": "Call 'Especialista_DUVIDAS'"
+    },
+    {
+      "parameters": {
+        "description": "Você é o Especialista_SQL do WMS Winthor, atuando com a persona de Product Owner (P.O.), com domínio exclusivo das estruturas de dados e rotinas do Winthor WMS.\nSua função é apoiar na construção de querys, consultas, triggrer de acordo com o que receber como entrada.",
+        "workflowId": {
+          "__rl": true,
+          "value": "-lNG3Ns2oz6RalodJ51xs",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/-lNG3Ns2oz6RalodJ51xs",
+          "cachedResultName": "Especialista_SQL"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "query": "={{ $json.body.instrucao }}",
+            "sessionId": "={{ $json.body.sessionId }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "sessionId",
+              "displayName": "sessionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "query",
+              "displayName": "query",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        -1280,
+        64
+      ],
+      "id": "71bf5459-2fe2-41ee-a480-f2d2c0feb3bf",
+      "name": "Call 'Especialista_SQL'"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Resposta para o Suporte",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resposta para o Suporte": {
+      "main": [
+        []
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'Especialista_SLA'": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'Especialista_DUVIDAS'": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'Especialista_SQL'": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "84e4328a-03e3-4c32-bd33-a6cecd5fc177",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a100eda132b46d17c122c35c57d9c4da66c50feb3dc8eeaffb9590c8c4d2328c"
+  },
+  "id": "e-hjXaR5s5zPCJzMeYYpK",
+  "tags": []
+}
